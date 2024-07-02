@@ -1,33 +1,50 @@
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+import axios, { AxiosResponse } from 'axios';
 
-var A = 'https://rickandmortyapi.com/api/character/';
-var B = new XMLHttpRequest();
+const API = 'https://rickandmortyapi.com/api/character/';
 
-function X(a, b) {
-  B.onreadystatechange = function (e) {
-    if (B.readyState == '4') {
-      if (B.status === '200')
-        b(null, B.responseText);
-      else return b(a);
-    }
-    else return b(a);
+interface Character {
+  id: number;
+  name: string;
+  origin: {
+    url: string;
   };
-  B.open('GET', a, false);
-  B.send();
+}
+
+interface ApiResponse {
+  info: {
+    count: number;
+  };
+  results: Character[];
+}
+
+const fetchData = async (url: string): Promise<any> => {
+  try {
+    const response: AxiosResponse<any> = await axios.get(url);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Error fetching data from ${url}: ${error.message}`);
+  }
 };
 
-X(A, function (c, d) {
-  if (c) return console.error('Error' + ' ' + c);
-  console.log('Primer Llamado...');
-  X(A + d.results[0].id, function (e, f) {
-    if (e) return console.error('Error' + ' ' + e);
+const main = async () => {
+  try {
+    console.log('Primer Llamado...');
+    const firstResponse: ApiResponse = await fetchData(API);
+    const characterId: number = firstResponse.results[0].id;
+
     console.log('Segundo Llamado...');
-    X(JSON.parse(f).origin.url, function (g, h) {
-      if (g) return console.error('Error' + ' ' + g);
-      console.log('Tercer Llamado...');
-      console.log('Personajes:' + ' ' + JSON.parse(d).info.count);
-      console.log('Primer Personaje:' + ' ' + JSON.parse(f).name);
-      console.log('Dimensión:' + ' ' + JSON.parse(h).dimension);
-    });
-  });
-});
+    const secondResponse: Character = await fetchData(`${API}${characterId}`);
+
+    console.log('Tercer Llamado...');
+    const thirdResponse: { dimension: string } = await fetchData(secondResponse.origin.url);
+
+    console.log(`Personajes: ${firstResponse.info.count}`);
+    console.log(`Primer Personaje: ${secondResponse.name}`);
+    console.log(`Dimensión: ${thirdResponse.dimension}`);
+  } catch (error: any) {
+    console.error('Error:', error.message);
+  }
+};
+
+main();
+
